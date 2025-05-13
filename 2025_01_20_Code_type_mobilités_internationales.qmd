@@ -1,0 +1,598 @@
+---
+title: "2024_11_22_Code_type_mobilités_internationales"
+author: "US 1502 - Unité de service d'appui aux PEPR (INRAE)"
+format: html
+editor: visual
+---
+
+## I/ Librairies
+
+```{r}
+#| echo: false
+# Ouvrir fichiers Excel
+library(readxl)
+
+# Graphes
+library(ggplot2)
+
+# Ordonner données
+library(forcats)
+library(tidyr)
+library(tidyverse)
+
+# WordCloud
+library(wordcloud)
+library(tm)
+```
+
+## II/ Fonctions
+
+## III/ Principal
+
+### Introduction
+
+```{r}
+data <- readxl::read_excel("C:/Users/mjoigneau/Nextcloud/MyDrive/4_Codes_types/Appel_à_mobilité_international/2024_11_22_Excel_exemple_mobilités_internationales.xlsx",
+                           sheet = "Excel_type")
+```
+
+Couleurs de FairCarboN
+
+```{r}
+# Couleurs principales de FairCarboN
+vert_emeraude3 <- rgb(43, 119, 88, maxColorValue = 255)
+macaron3 <- rgb(141, 83, 62, maxColorValue = 255)
+
+# Couleurs secondaires de FairCarboN
+vert_emeraude2 <- rgb(0, 169, 95, maxColorValue = 255)
+macaron2 <- rgb(225, 139, 118, maxColorValue = 255)
+
+# Autres couleurs qui vont avec
+gold3 <- "darkgoldenrod3"
+gold1 <- "darkgoldenrod1"
+beige3 <- "wheat3"
+beige1 <- "wheat1"
+```
+
+Couleurs des graphes
+
+```{r}
+# Couleurs
+couleur1princ <- vert_emeraude3
+couleur2princ <- macaron3
+couleur1second <- vert_emeraude2
+couleur2second <- macaron2
+couleur1autre <- gold3
+couleur2autre <- gold1
+couleur3autre <- beige3
+couleur4autre <- beige1
+```
+
+### Graphes
+
+#### 1) Répartition des axes
+
+On souhaite connaître la réparition des candidatures par axes (plusieurs axes pour une même candidature)
+
+Pair d'axe mis en avant car 2 axes pour 1 candidat
+
+```{r}
+# On veut la fréquence
+df_axes2 <- data.frame(table(data$Axes))
+names(df_axes2)[1] <- "Axe"
+df_axes2$Axe <- as.character(df_axes2$Axe)
+df_axes2$Axe[1] <- "Axe 1"
+df_axes2$Axe[2] <- "Axe 1 & 2"
+df_axes2$Axe[3] <- "Axe 2"
+df_axes2$Axe[4] <- "Axe 2 & 3"
+df_axes2$Axe[5] <- "Axe 4"
+df_axes2$Axe <- as.factor(df_axes2$Axe)
+df_axes2$Freq <- as.integer(df_axes2$Freq)
+
+
+ggplot2::ggplot(df_axes2, aes(Axe, Freq)) + 
+  geom_bar(stat="identity", alpha=0.8, color="black", fill=couleur1princ) +
+  geom_text(aes(label = Freq, y = Freq), vjust = -0.5, color = "black") +
+  
+  # Titres
+  labs(y = "Nombre de candidats", x="Axes en lien avec le projet de mobilité", title = "Répartition des axes en lien avec les projets de mobilité des candidats") +
+  
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.ticks = element_line(colour = "black"), # Ajoute les tick marks des axes
+    axis.text = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.title = element_text(colour = "black") # Ajoute les titres des axes
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  
+  # Variables x penchées
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### 2) Financement demandé / obtenus
+
+```{r}
+ggplot2::ggplot(data, aes(y=`Financement demandé / obtenus (en €)`,x="Candidats")) +
+  
+  geom_boxplot(fill= couleur2second, outlier.shape = NA) +
+  geom_jitter(color="black", size=1.4, alpha=0.9,
+              height = 0) +
+
+  # Puis on s'occupe des détails visuels:
+  # Titres
+  labs( y = "Montant (en €)", title = "Répartition des financements demandés / obtenus") +
+  xlab(NULL)+
+  
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    legend.background = element_blank(),  # Enlève le fond gris de la légende
+    legend.key = element_blank(),         # Enlève le fond gris derrière les symboles de la légende
+    axis.line.y = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.text.y = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.ticks.y = element_line(colour = "black"), # Ajoute les tick marks des axes
+    # Disparition de l'axe en x
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5))
+```
+
+#### 3) Statut des candidats
+
+```{r}
+# On veut la fréquence
+df_stat <- data.frame(table(data$Statut))
+names(df_stat)[1] <- "Statut"
+df_stat$Statut <- as.character(df_stat$Statut)
+df_stat$Statut <- as.factor(df_stat$Statut)
+df_stat$Freq <- as.integer(df_stat$Freq)
+
+
+ggplot2::ggplot(df_stat, aes(x = fct_reorder(Statut, Freq, .desc = TRUE), Freq)) + 
+  
+  geom_bar(stat="identity",alpha=0.8,color="black", fill= couleur1princ)+
+  
+  geom_text(aes(label = c(Freq), y = c(Freq)), vjust = -0.5, color = "black") +
+  
+  # Puis on s'occupe des détails visuels:
+  # Titres
+  labs(y = "Nombre de candidats",x="Statut des candidats", title = "Répartition des statuts des candidats") +
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.ticks = element_line(colour = "black"), # Ajoute les tick marks des axes
+    axis.text = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.title = element_text(colour = "black") # Ajoute les titres des axes
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  
+  # Variables x penchées
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### 4) Type de mobilité
+
+```{r}
+# On veut la fréquence
+df_type <- data.frame(table(data$`Type de mobilité`))
+names(df_type)[1] <- "Mobilite"
+df_type$Mobilite <- as.factor(df_type$Mobilite)
+
+
+ggplot2::ggplot(df_type, aes(x = forcats::fct_reorder(Mobilite, Freq, .desc = TRUE), Freq)) + 
+  
+  geom_bar(stat="identity",alpha=0.8,color="black", fill= couleur1princ) +
+  
+  geom_text(aes(label = c(Freq), y = c(Freq)), vjust = -0.5, color = "black") +
+  
+  # On met les couleurs
+  #scale_fill_manual(values = c("#darkolivegreen1") )+
+  
+  # Puis on s'occupe des détails visuels:
+  # Titres
+  labs(y = "Nombre de candidats",x="Type de mobilité", title = "Répartition des types de mobilité") +
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.ticks = element_line(colour = "black"), # Ajoute les tick marks des axes
+    axis.text = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.title = element_text(colour = "black") # Ajoute les titres des axes
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  
+  # Variables x penchées
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### 5) Durée de la mobilité (mois)
+
+```{r}
+ggplot2::ggplot(data, aes(y=`Durée de la mobilité (en mois)`,x="Candidats")) +
+  
+  geom_boxplot(fill= couleur2second, outlier.shape = NA) +
+  geom_jitter(color="black", size=1.4, alpha=0.9,
+              height = 0) +
+  
+  # Puis on s'occupe des détails visuels:
+  # Titres
+  labs( y = "Durée (en mois)", title = "Répartition des durées de mobilités") +
+  xlab(NULL)+
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    legend.background = element_blank(),  # Enlève le fond gris de la légende
+    legend.key = element_blank(),         # Enlève le fond gris derrière les symboles de la légende
+    axis.line.y = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.text.y = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.ticks.y = element_line(colour = "black"), # Ajoute les tick marks des axes
+    # Disparition de l'axe en x
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5))
+```
+
+#### 6) Implication des projets
+
+##### Implication ou pas
+
+```{r}
+data$Implication_oui_non <- ifelse(data$`Implication projets`=="Non","Non","Oui")
+
+# On veut la fréquence
+df_implication <- data.frame(table(data$Implication_oui_non))
+names(df_implication)[1] <- "Implication"
+df_implication$Implication <- as.factor(df_implication$Implication)
+
+
+# On veut des pourcentages
+pourc_imp <- round((df_implication$Freq/sum(df_implication$Freq))*100,0)
+
+ggplot(df_implication, aes(x=1, y=Freq, fill= Implication)) +
+  
+  geom_bar(stat="identity") +
+  scale_fill_manual(values= c(couleur1princ, couleur1second)) +
+  
+  # Transformation en camembert
+  coord_polar(theta='y') +
+  
+  # Titres
+  labs(title = "Implication ou pas du candidat dans un projet scientifique de FairCarboN") +
+  # Thème sans cadre ni axes
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title = element_blank()) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  
+  # Contours noirs
+  geom_bar(stat="identity", color='black') +
+  theme(axis.ticks=element_blank(),  # the axis ticks
+        axis.title=element_blank(),  # the axis labels
+        axis.text.y=element_blank()) +  # the 0.75, 1.00, 1.25 labels.
+  
+  geom_label(aes(label = paste(pourc_imp," %")),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE)
+```
+
+##### Implication dans quel projet
+
+```{r}
+# On veut une liste et un df des axes et non plusieurs axes avec des ";" puis un dataframe
+list_impli <- unlist(strsplit(data$`Implication projets`, " ; "))
+df_implication_sep <- data.frame(Axe = list_impli)
+
+# On veut la fréquence
+df_implication_sep <- data.frame(table(df_implication_sep))
+names(df_implication_sep)[1] <- "Projet"
+
+## On rajoute les projets avec 0 implication du candidat
+# Création du dataframe avec les 0
+df_0_implication <- data.frame(
+  Projet = c("ALAMOD", "CABESTAN", "CrosyeN", "Drought For C", "Rift Flux"),
+  Freq = c(0, 0, 0, 0, 0)
+)
+# Ajouter les nouvelles lignes au dataFrame existant
+df_implication_sep <- rbind(df_implication_sep, df_0_implication)
+
+# On supprime quand aucun projet n'est impliqué (ligne 4)
+df_implication_sep <- df_implication_sep[-4,]
+
+# On met en facteur pour le graphe
+df_implication_sep$Projet <- as.factor(df_implication_sep$Projet)
+
+# On filtre pour l'affichage
+filtered_df <- df_implication_sep %>% filter(Freq > 0)
+
+# On veut des pourcentages sur les projets avec une frequence > 0
+pourc_sep <- round((filtered_df$Freq/sum(filtered_df$Freq))*100,0)
+
+
+ggplot(df_implication_sep, aes(x=1, y=Freq, fill= Projet)) +
+  
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=as.vector(c(couleur1princ, couleur1second, couleur2princ, couleur2second, couleur2autre, couleur1autre, "white", "white", "white", "white", "white")))+
+  
+  # Transformation en camembert
+  coord_polar(theta='y') +
+  
+  # Titres
+  labs(title = "Projets scientifiques de FairCarboN dans lesquels un candidat est impliqué") +
+  # Thème sans cadre ni axes
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.text.x = element_blank(),
+    axis.title = element_blank()) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  # Contours noirs
+  geom_bar(stat="identity", color='black') +
+  theme(axis.ticks=element_blank(),  # the axis ticks
+        axis.title=element_blank(),  # the axis labels
+        axis.text.y=element_blank()) +   # the 0.75, 1.00, 1.25 labels.
+  
+  geom_label(data = filtered_df,
+             aes(label = paste(pourc_sep," %")),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE)
+```
+
+#### 7) Projets en lien
+
+```{r}
+# On veut une liste et un df des axes et non plusieurs axes avec des ";" puis un dataframe
+list_projet_lien <- unlist(strsplit(data$`Projets en lien`, " ; "))
+df_projet_lien_sep <- data.frame(Axe = list_projet_lien)
+
+# On veut la fréquence
+df_projet_lien_sep <- data.frame(table(df_projet_lien_sep))
+names(df_projet_lien_sep)[1] <- "Projet"
+
+## On rajoute les projets avec 0 implication du candidat
+# Création du dataframe avec les 0
+df_0_projet_lien_sep <- data.frame(
+  Projet = c("CABESTAN", "CrosyeN", "Drought For C", "Rift Flux"),
+  Freq = c(0, 0, 0, 0)
+)
+# Ajouter les nouvelles lignes au dataFrame existant
+df_projet_lien_sep <- rbind(df_projet_lien_sep, df_0_projet_lien_sep)
+
+# On supprime quand aucun projet n'est impliqué (ligne 2)
+#df_projet_lien_sep <- df_projet_lien_sep[-2,]
+
+# On met en facteur pour le graphe
+df_projet_lien_sep$Projet <- as.factor(df_projet_lien_sep$Projet)
+
+
+# On filtre pour l'affichage
+filtered_df_lien <- df_projet_lien_sep %>% filter(Freq > 0)
+
+# On veut des pourcentages sur les projets avec une frequence > 0
+pourc_projet_lien_sep <- round((filtered_df_lien$Freq/sum(filtered_df_lien$Freq))*100,0)
+
+# Graphe
+ggplot(df_projet_lien_sep, aes(x=1, y=Freq, fill= Projet)) +
+  
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=as.vector(c(couleur1princ, couleur1second, couleur2princ, couleur2second, couleur2autre, couleur1autre, couleur4autre, couleur3autre, "white", "white", "white", "white")))+
+  
+  # Transformation en camembert
+  coord_polar(theta='y') +
+  
+  # Titres
+  labs(title = "Projets scientifiques de FairCarboN en lien avec la mobilité") +
+  # Thème sans cadre ni axes
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    axis.title = element_blank()) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  # Contours noirs
+  geom_bar(stat="identity", color='black') +
+  theme(axis.ticks=element_blank(),  # the axis ticks
+        axis.title=element_blank(),  # the axis labels
+        axis.text.x = element_blank(),
+        axis.text.y=element_blank()) +  # the 0.75, 1.00, 1.25 labels.
+  
+  geom_label(data = filtered_df_lien,
+             aes(label = paste(pourc_projet_lien_sep," %")),
+             position = position_stack(vjust = 0.5),
+             show.legend = FALSE) 
+```
+
+#### 8) Pays de destination
+
+```{r}
+# On veut la fréquence
+df_labo <- data.frame(table(data$`Pays de destination`))
+names(df_labo)[1] <- "Pays"
+
+ggplot(df_labo, aes(x = fct_reorder(Pays, Freq, .desc = TRUE), Freq)) + 
+  
+  geom_bar(stat="identity",alpha=0.8,color="black", fill= couleur1princ)+
+  
+  geom_text(aes(label = c(Freq), y = c(Freq)), vjust = -0.5, color = "black") +
+  
+  # Puis on s'occupe des détails visuels:
+  # Titres
+  labs(y = "Nombre de candidats",x="Pays de destination", title = "Répartition des pays de destination pour une mobilité sortante") +
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.ticks = element_line(colour = "black"), # Ajoute les tick marks des axes
+    axis.text = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.title = element_text(colour = "black") # Ajoute les titres des axes
+  ) +
+  
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(plot.subtitle = element_text(hjust = 0.5)) +
+  # Variables x penchees
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### 9) Nuage de mots
+
+```{r}
+# Traduction en français
+data$`Titre projet`[3] <- "Étude à grande échelle des facteurs affectant la variation spatiale de l'effet d'amorçage de la rhizosphère dans les terres cultivées européennes"
+data$`Titre projet`[8] <- "Régulation des flux de CO2 et CH4 par les formes de croissance des macrophytes"
+data$`Titre projet`[11] <- "Cycle du carbone dans les fjords : nouvelles mesures de pyrolyse progressive sur des échantillons de fjords de Patagonie"
+data$`Titre projet`[12] <- "Processus bidimensionnels de carbone et de nutriments dans les sédiments de mangrove"
+
+# Vecteur avec le texte :
+text <- data$`Titre projet`
+# Corpus :
+docs <- tm::Corpus(VectorSource(text))
+
+# Nettoyage du corpus :
+docs <- docs %>%
+  # On enlève les nombres
+  #tm_map(removeNumbers) %>%
+  # On enlève les apostrophes
+  tm::tm_map(content_transformer(function(x) gsub("d'", " ", x))) %>%
+  tm::tm_map(content_transformer(function(x) gsub("l'", " ", x))) %>%
+  # On enlève les apostrophes
+  tm::tm_map(content_transformer(function(x) gsub("'", " ", x))) %>%
+  tm::tm_map(content_transformer(function(x) gsub("’", " ", x))) %>%
+  # On enlève la ponctuation
+  tm::tm_map(removePunctuation) %>%
+  # On enlève les espaces blancs superflus
+  tm::tm_map(stripWhitespace) %>%
+  # On convertie le texte en minuscule
+  tm::tm_map(content_transformer(tolower)) %>%
+  # On enlève les mots vides en anglais et en français
+  tm::tm_map(removeWords, stopwords("english")) %>%
+  tm::tm_map(removeWords, stopwords("french"))
+
+
+# Création d'une matrice des mots et fréquences
+dtm <- tm::TermDocumentMatrix(docs) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df_cloud <- data.frame(word = names(words),freq=words)
+
+# Correction de quelques coquilles
+df_cloud[df_cloud$word=="ch4",]$word <- "CH4"
+df_cloud[df_cloud$word=="co2",]$word <- "CO2"
+df_cloud[df_cloud$word=="cycle",]$freq <- 2
+df_cloud[df_cloud$word=="cycles",]$freq <- 0
+df_cloud[df_cloud$word=="effet",]$freq <- 2
+df_cloud[df_cloud$word=="effets",]$freq <- 0
+df_cloud[df_cloud$word=="grande",]$word <- "grand"
+df_cloud[df_cloud$word=="grand",]$freq <- 2
+df_cloud[df_cloud$word=="grands",]$freq <- 0
+
+# Génération du nuage de mot
+set.seed(1234)
+par(mar = c(0, 0, 0, 0))
+wordcloud::wordcloud(
+  words = df_cloud$word,
+  freq = df_cloud$freq,
+  min.freq = 1,
+  max.words = Inf,
+  random.order = FALSE,
+  rot.per = 0.35,
+  scale=c(1,0.5), # taille max, taille min
+  # colors = brewer.pal(8, "Dark2")
+  colors = c(couleur1princ, couleur2princ, couleur1second, couleur2second)
+)
+```
+
+### Analyses statistiques
+
+#### 1) Corrélations
+
+```{r}
+data$`Durée de la mobilité (en mois)` <- as.numeric(data$`Durée de la mobilité (en mois)`)
+
+## Correlations entre financement et durée de la mobilité ?
+#  - a correlation is strong when in [-1,-0.5]U[0.5,1]
+# - positive correlation (R²=0.3; P<0.001), so the 2 values augment together but not that high
+# - it means that I can have not the two measures of size in the same model
+## Log2
+# - log limit variability, only for quantitative data (length, weight...)
+# - log2 instead of log for easier interpretation, 2 columns for each, one with, and one without (warning: interpreation of the graphs!)
+# - log2 explaination : https://rstudio-pubs-static.s3.amazonaws.com/13988_bb11d85b79b2436280de434988558140.html 
+cor.test(log2(data$`Financement demandé / obtenus (en €)`), log2(data$`Durée de la mobilité (en mois)`)) # log² with corr = 0.26
+```
+
+
+```{r}
+ggplot(data, aes (x = `Durée de la mobilité (en mois)`, y = `Financement demandé / obtenus (en €)`, color = couleur1princ))+
+  
+  ### Les graphes :
+  geom_point(size = 3) +
+  geom_smooth(method='lm') +
+  
+  ### Les détails de présentation :
+  
+  # On met les couleurs
+  scale_color_manual(values = c(couleur1princ))+
+  # Titres
+  labs(y = "Financement demandé / obtenus (en €)", x="Durée de la mobilité (en mois)", title = "Financement demandé / obtenus en fonction de la durée de mobilité") +
+  # Thème sans cadre mais avec axes x et y
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    panel.background = element_blank(), 
+    axis.line = element_line(colour = "black"), # Ajoute les lignes des axes
+    axis.ticks = element_line(colour = "black"), # Ajoute les tick marks des axes
+    axis.text = element_text(colour = "black"), # Ajoute les labels des axes
+    axis.title = element_text(colour = "black") # Ajoute les titres des axes
+  ) +
+  # Titre au milieu
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.position = "none") 
+```
+
